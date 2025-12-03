@@ -2,16 +2,20 @@ from flask import Flask, request, jsonify, render_template_string
 import requests
 from bs4 import BeautifulSoup
 import urllib.parse
+import os
 
 app = Flask(__name__)
 
+# ==========================================
+# 🎨 ফ্রন্টএন্ড ডিজাইন (HTML/CSS/JS) - অত্যাধুনিক স্টাইল
+# ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CineFreak & Google Explorer</title>
+    <title>CineFreak & Google Explorer - Sayeef Adnan</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Hind+Siliguri:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -40,6 +44,7 @@ HTML_TEMPLATE = """
             overflow: hidden;
         }
 
+        /* --- Header Styling --- */
         .header {
             background: rgba(20, 20, 20, 0.85);
             backdrop-filter: blur(15px);
@@ -67,6 +72,7 @@ HTML_TEMPLATE = """
             text-transform: uppercase;
         }
 
+        /* --- Chat Container --- */
         .chat-container {
             flex: 1;
             overflow-y: auto;
@@ -77,6 +83,7 @@ HTML_TEMPLATE = """
             scroll-behavior: smooth;
         }
 
+        /* Scrollbar Styling */
         .chat-container::-webkit-scrollbar { width: 6px; }
         .chat-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
 
@@ -109,6 +116,7 @@ HTML_TEMPLATE = """
             border-bottom-left-radius: 4px;
         }
 
+        /* --- Result Item Styling --- */
         .result-card {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 12px;
@@ -142,6 +150,8 @@ HTML_TEMPLATE = """
         .source-cinefreak { background-color: var(--cinefreak-color); }
         .source-general { background-color: var(--general-color); }
 
+
+        /* --- Input Area --- */
         .input-area {
             background: rgba(20, 20, 20, 0.9);
             backdrop-filter: blur(20px);
@@ -182,6 +192,7 @@ HTML_TEMPLATE = """
         button:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(118, 75, 162, 0.8); }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
 
+        /* --- Footer --- */
         .footer {
             text-align: center;
             padding: 8px;
@@ -193,6 +204,7 @@ HTML_TEMPLATE = """
         .footer a { color: #888; text-decoration: none; }
         .warning-text { color: #ff4757; font-weight: bold; }
 
+        /* Loader */
         .typing-indicator span {
             display: inline-block; width: 6px; height: 6px; background-color: #fff; border-radius: 50%;
             animation: typing 1.4s infinite ease-in-out both; margin: 0 2px;
@@ -206,15 +218,16 @@ HTML_TEMPLATE = """
 <body>
 
 <div class="header">
-    <h1>CineFreak & Google Explorer</h1>
+    <h1>CineFreak & Dual Explorer</h1>
     <div class="branding-tag">Build by Sayeef Adnan</div>
 </div>
 
 <div class="chat-container" id="chatBox">
+    <!-- Initial Bot Message -->
     <div class="message bot-msg">
         <div style="font-weight:bold; color:var(--accent-color); margin-bottom:8px;">বিসমিল্লাহির রহমানির রহিম</div>
-        আসসালামু আলাইকুম! আমি <strong>CineFreak</strong> এবং <strong>Google</strong> সার্চ অ্যাসিস্ট্যান্ট।<br><br>
-        মুভি বা সিরিজের নাম লিখলে CineFreak-এ খুঁজব, আর সাধারণ প্রশ্ন করলে Google-এ খুঁজব।
+        আসসালামু আলাইকুম! আমি <strong>CineFreak</strong> এবং <strong>General Web</strong> সার্চ অ্যাসিস্ট্যান্ট।<br><br>
+        আপনার যেকোনো প্রশ্ন লিখুন, আমি CineFreak এবং Google (DuckDuckGo)-এ একসাথে খুঁজে ফলাফল দেখাব।
     </div>
 </div>
 
@@ -267,15 +280,17 @@ HTML_TEMPLATE = """
             let botResponseHTML = `<div style="font-weight:bold; color:var(--accent-color); margin-bottom:5px;">বিসমিল্লাহির রহমানির রহিম</div>`;
 
             if (data.results && data.results.length > 0) {
-                const sourceClass = data.source === 'CineFreak' ? 'source-cinefreak' : 'source-general';
-                const sourceLabel = data.source === 'CineFreak' ? 'সোর্স: CineFreak.net (স্পেশালাইজড)' : 'সোর্স: Google (সাধারণ)';
-
-                botResponseHTML += `<span class="source-tag ${sourceClass}">${sourceLabel}</span><br>`;
-                botResponseHTML += `আপনার জন্য ${data.results.length} টি ফলাফল পাওয়া গেছে:<br>`;
+                
+                botResponseHTML += `আপনার জন্য মোট ${data.results.length} টি ফলাফল পাওয়া গেছে (CineFreak ও Google থেকে সম্মিলিত):<br>`;
                 
                 data.results.forEach(item => {
+                    // প্রতিটি রেজাল্টের সোর্স ট্যাগ ডাইনামিকভাবে সেট করা হবে
+                    const sourceClass = item.source === 'CineFreak' ? 'source-cinefreak' : 'source-general';
+                    const sourceLabel = item.source === 'CineFreak' ? 'CineFreak.net' : 'Google/Web';
+
                     botResponseHTML += `
                         <div class="result-card">
+                            <span class="source-tag ${sourceClass}">${sourceLabel}</span>
                             <a href="${item.link}" target="_blank" class="result-title">${item.title}</a>
                             <span class="result-link">${item.link}</span>
                             <div class="result-desc">${item.desc}</div>
@@ -283,7 +298,7 @@ HTML_TEMPLATE = """
                     `;
                 });
             } else {
-                botResponseHTML += `দুঃখিত, '${query}' সম্পর্কিত কোনো তথ্য খুঁজে পাওয়া যায়নি।`;
+                botResponseHTML += `দুঃখিত, '${query}' সম্পর্কিত কোনো তথ্য CineFreak বা General Web-এ খুঁজে পাওয়া যায়নি।`;
             }
 
             // Footer Signature in Message
@@ -295,6 +310,7 @@ HTML_TEMPLATE = """
             chatBox.innerHTML += `<div class="message bot-msg">${botResponseHTML}</div>`;
 
         } catch (e) {
+            console.error("Fetch Error:", e);
             document.getElementById(loadingId).remove();
             chatBox.innerHTML += `<div class="message bot-msg" style="color:#ff6b6b;">
                                     সার্ভার এরর হয়েছে। দয়া করে যোগাযোগ করুন: <a href="mailto:iamadtul@gmail.com" style="color:#ff6b6b; text-decoration:underline;">iamadtul@gmail.com</a>
@@ -310,10 +326,13 @@ HTML_TEMPLATE = """
 </html>
 """
 
+# ==========================================
+# ⚙️ ব্যাকএন্ড লজিক (Dual Search Implementation)
+# ==========================================
+
+# --- ১. CineFreak Search Function ---
 def search_cinefreak(query):
-    """
-    CineFreak.net থেকে তথ্য খুঁজে বের করার ফাংশন।
-    """
+    """CineFreak.net থেকে তথ্য খুঁজে বের করার ফাংশন।"""
     url = f"https://www.cinefreak.net/?s={urllib.parse.quote_plus(query)}"
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -325,7 +344,6 @@ def search_cinefreak(query):
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
             results = []
-            
             articles = soup.find_all('article')
             if not articles:
                 articles = soup.find_all('div', class_='post')
@@ -353,10 +371,9 @@ def search_cinefreak(query):
         print(f"Error scraping CineFreak: {e}")
         return []
 
+# --- ২. General Web Search Function (DuckDuckGo as Google Alternative) ---
 def search_web(query):
-    """
-    সাধারণ ইন্টারনেট সার্চ (DuckDuckGo) যা Google 429 ব্লক এড়িয়ে যায়।
-    """
+    """সাধারণ ইন্টারনেট সার্চ (DuckDuckGo) যা Google-এর বিকল্প হিসেবে ব্যবহার করা হয়েছে।"""
     url = "https://html.duckduckgo.com/html/"
     payload = {'q': query}
     headers = {
@@ -372,8 +389,7 @@ def search_web(query):
             
             for result in soup.find_all('div', class_='result'):
                 link_tag = result.find('a', class_='result__a')
-                if not link_tag:
-                    continue
+                if not link_tag: continue
                 
                 title = link_tag.text
                 link = link_tag['href']
@@ -398,25 +414,36 @@ def search_web(query):
         print(f"Error in search_web (DuckDuckGo): {e}")
         return []
 
-@app.route('/')
-def home():
-    return render_template_string(HTML_TEMPLATE)
-
+# --- ৩. Main Search API (Dual Display Logic) ---
 @app.route('/search', methods=['POST'])
 def search_api():
     data = request.json
     query = data.get('query', '')
+    final_results = []
     
-    # প্রথমে CineFreak-এ সার্চ করা
+    # 1. CineFreak-এ সার্চ করা
     cinefreak_results = search_cinefreak(query)
-    
-    if cinefreak_results:
-        # CineFreak-এ ফলাফল পাওয়া গেলে সেটি রিটার্ন
-        return jsonify({'results': cinefreak_results, 'source': 'CineFreak'})
-    else:
-        # না হলে সাধারণ ওয়েবে সার্চ (Google) করা
-        general_results = search_web(query)
-        return jsonify({'results': general_results, 'source': 'Google'})
+    for res in cinefreak_results:
+        res['source'] = 'CineFreak' # সোর্স ট্যাগ যোগ করা
+        final_results.append(res)
+        
+    # 2. সাধারণ ওয়েবে সার্চ (DuckDuckGo)
+    general_results = search_web(query)
+    for res in general_results:
+        res['source'] = 'Google' # সোর্স ট্যাগ যোগ করা
+        final_results.append(res)
+        
+    # সর্বোচ্চ ১০টি রেজাল্ট পাঠানো
+    return jsonify({'results': final_results[:10]}) 
+
+
+# --- সার্ভার রুট ---
+@app.route('/')
+def home():
+    return render_template_string(HTML_TEMPLATE)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    # Render-এর জন্য PORT ভ্যারিয়েবল ব্যবহার নিশ্চিত করা হয়েছে
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
